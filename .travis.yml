@@ -1,0 +1,7 @@
+language: c
+
+before_install:
+        - sudo apt-get update -qq
+        - sudo apt-get install -qq swi-prolog
+
+script: swipl -l resp.pl -l resp.plt -g run_tests -t halt
