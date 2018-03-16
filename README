@@ -1,7 +1,7 @@
----+ Redis Protocol Library
+## Redis Protocol Library
 
 This module provides two predicates for parsing and generating Redis Protocol compatible streams.
 
----++ References
+## References
 
-    * https://redis.io/topics/protocol
+* https://redis.io/topics/protocol
