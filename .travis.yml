@@ -1,7 +1,7 @@
 language: c
 
 before_install:
-        - sudo apt-add-repository ppa:swi-prolog/stable
+        - sudo apt-add-repository ppa:swi-prolog/stable -y
         - sudo apt-get update -qq
         - sudo apt-get install -qq swi-prolog
         - swipl -g check_installation -t halt
