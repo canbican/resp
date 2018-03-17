@@ -6,4 +6,4 @@ before_install:
         - sudo apt-get install -qq swi-prolog
         - swipl -g check_installation -t halt
 
-script: swipl -l resp.pl -l resp.plt -g run_tests -t halt
+script: swipl -l prolog/resp.pl -l prolog/resp.plt -g run_tests -t halt
