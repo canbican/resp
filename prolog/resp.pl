@@ -1,5 +1,5 @@
 /** <module> Redis protocol parser and writer.
- 
+
 @author Can Bican
 @license GPL
 
@@ -41,10 +41,30 @@ get_chars(Stream,[First|Rest],Count) :-
 %
 %  Write contents of the List to the Stream in Redis protocol format.
 %
-resp_write(_,[]) :- !.
-resp_write(Stream,[First|Rest]) :-
+
+resp_write(Stream,Array) :-
+	resp_write(Stream,Array,false).
+
+resp_write(_,[],true) :-
+	!.
+
+resp_write(Stream,[],_) :-
+	format(Stream,"*0~w",["\r\n"]),
+	!.
+resp_write(Stream,[nil],_) :-
+	format(Stream,"*-1~w",["\r\n"]),
+	!.
+resp_write(Stream,[First|Rest],IsFirst) :-
+	is_list([First|Rest]),
+	length([First|Rest],Length),
+	( IsFirst == true ;
+	format(Stream,"*~w~w",[Length,"\r\n"])),
 	resp_write_one(Stream,First),
-	resp_write(Stream,Rest).
+	resp_write(Stream,Rest,true),
+	!.
+resp_write(Stream,Term,_) :-
+	resp_write_one(Stream,Term),
+	!.
 
 resp_write_one(Stream,string(String)) :-
 	format(Stream,"+~w~w",[String,"\r\n"]).
@@ -57,13 +77,12 @@ resp_write_one(Stream,bulk(nil)) :-
 resp_write_one(Stream,bulk(String)) :-
 	unicode_byte_length(String,Length),
 	format(Stream,"$~w~w~w~w",[Length,"\r\n",String,"\r\n"]).
-resp_write_one(Stream,array(nil)) :-
-	format(Stream,"*-1~w",["\r\n"]),
-	!.
-resp_write_one(Stream,array(Array)) :-
-	resp_write_one_array(Array,ResultArray),
-	length(Array,Length),
-	format(Stream,"*~w~w~w",[Length,"\r\n",ResultArray]).
+resp_write_one(Stream,Array) :-
+	is_list(Array),
+	resp_write(Stream,Array).
+
+resp_writef_array(Stream,Array) :-
+	format(Stream,"~w",[Array]).
 
 resp_write_one_array([],"") :- !.
 resp_write_one_array([First|Rest],ResultString) :-
@@ -74,18 +93,18 @@ resp_write_one_array([First|Rest],ResultString) :-
 	memory_file_to_string(MF,FirstResult,utf8),
 	free_memory_file(MF),
 	resp_write_one_array(Rest,ResultRest),
-	string_concat(FirstResult,ResultRest,ResultString).
+	swritef(ResultString,"%w%w",[FirstResult,ResultRest]).
 
 %! resp_parse(Stream, List) is nondet.
 %
 % Parse the input from Stream as a List of predicates.
 %
-resp_parse(Stream,[Result|RestResult]) :-
+resp_parse(Stream,Result) :-
 	read_line_to_codes(Stream,[TypeCode|ArgumentCodes]),
 	char_code(Type,TypeCode),
 	atom_chars(Arguments,ArgumentCodes),
-	resp_parse(Type,Arguments,Stream,Result),
-	resp_parse(Stream,RestResult).
+	resp_parse(Type,Arguments,Stream,Result).
+	% resp_parse(Stream,RestResult).
 resp_parse(_,[]) :- !.
 
 resp_parse('+',Argument,_,string(Argument)) :- !.
@@ -101,14 +120,15 @@ resp_parse('$',Argument,Stream,bulk(Result)) :-
 	atom_number(Argument,Count),
 	get_chars(Stream,ResultChars,Count),
 	string_codes(Result,ResultChars),
-	seek(Stream,2,current,_),
+	get_code(Stream,_),
+	get_code(Stream,_),
 	!.
-resp_parse('*',Argument,Stream,array(Result)) :-
+resp_parse('*',Argument,Stream,Result) :-
 	atom_number(Argument,Count),
 	resp_parse_array(Stream,Count,Result),
 	!.
 
-resp_parse_array(_,-1,nil) :- !.
+resp_parse_array(_,-1,[nil]) :- !.
 resp_parse_array(_,0,[]) :- !.
 resp_parse_array(Stream,Count,[First|Rest]) :-
 	read_line_to_codes(Stream,[TypeCode|ArgumentCodes]),
