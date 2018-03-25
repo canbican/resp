@@ -6,4 +6,4 @@ This module provides two predicates for parsing and generating Redis Protocol co
 
 * https://redis.io/topics/protocol
 
-[![Build Status](https://travis-ci.org/canbican/resp.svg?branch=master)](https://travis-ci.org/canbican/resp.svg?branch=master)
+[![Build Status](https://travis-ci.org/canbican/resp.svg?branch=master)](https://travis-ci.org/canbican/resp)
